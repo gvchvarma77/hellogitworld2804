@@ -1,0 +1,11 @@
+#!/bin/bash
+
+branch_name=$(git rev-parse --abbrev-ref HEAD)
+
+if [[ $branch_name =~ ^feature/ ]]; then
+  # Further validation can be added here, e.g., checking for specific keywords
+  exit 0
+else
+  echo "Branch name must start with 'feature/'"
+  exit 1
+fi
