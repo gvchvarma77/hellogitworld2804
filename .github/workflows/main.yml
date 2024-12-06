@@ -1,0 +1,21 @@
+name: Notify Pipeline Completion
+
+on:
+  workflow_run:
+    workflows: ["CI Pipeline"]
+    types:
+      - completed
+
+jobs:
+  notify:
+    runs-on: ubuntu-latest
+
+    steps:
+      # Step 1: Email Notification
+      - name: Send Email Notification
+        run: |
+          if [ "${{ github.event.workflow_run.conclusion }}" == "success" ]; then
+            echo "Pipeline succeeded!" | mail -s "Pipeline Success" gvchvarma@gmail.com
+          elif [ "${{ github.event.workflow_run.conclusion }}" == "failure" ]; then
+            echo "Pipeline failed!" | mail -s "Pipeline Failure" gvchvarma@gmail.com
+          fi
