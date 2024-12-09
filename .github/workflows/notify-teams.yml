@@ -1,0 +1,65 @@
+name: Notify Teams on Workflow Status
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  notify-teams:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Set Notification Message
+        id: set-message
+        run: |
+          if [ "${{ github.event_name }}" == "push" ]; then
+            EVENT_TYPE="Push"
+          elif [ "${{ github.event_name }}" == "pull_request" ]; then
+            EVENT_TYPE="Pull Request"
+          fi
+          echo "::set-output name=event_type::$EVENT_TYPE"
+          echo "::set-output name=status_message::Workflow ${{ job.status }} for $EVENT_TYPE by ${{ github.actor }} on branch ${{ github.ref_name }}"
+      
+      - name: Send Notification to Teams
+        if: always() # Ensures this step runs regardless of success or failure
+        env:
+          WEBHOOK_URL: ${{ https://cadcs.webhook.office.com/webhookb2/21565c3a-81c6-439e-8688-c9e9c2796645@0f527893-5a58-4a7c-8d9e-122b5092fd1f/IncomingWebhook/a5c6789b2e1248a39bd0b0d7dcc12565/36403e89-5edb-4c56-b25a-eeb55a01bbb7/V2cESI74FfNneL5s3KccE75gMzd8NQFIP3FYTzC5A_0vo1 }}
+        run: |
+          STATUS="${{ job.status }}"
+          COLOR=""
+
+          # Set color based on job status
+          if [ "$STATUS" == "success" ]; then
+            COLOR="#00FF00"
+          elif [ "$STATUS" == "failure" ]; then
+            COLOR="#FF0000"
+          else
+            COLOR="#FFFF00"
+          fi
+
+          # Create message payload
+          PAYLOAD=$(cat <<EOF
+          {
+            "@type": "MessageCard",
+            "@context": "http://schema.org/extensions",
+            "themeColor": "$COLOR",
+            "summary": "GitHub Actions Notification",
+            "sections": [{
+              "activityTitle": "GitHub Actions Workflow Notification",
+              "activitySubtitle": "Repository: ${{ github.repository }}",
+              "activityText": "${{ steps.set-message.outputs.status_message }}",
+              "facts": [
+                { "name": "Event", "value": "${{ steps.set-message.outputs.event_type }}" },
+                { "name": "Status", "value": "$STATUS" },
+                { "name": "Actor", "value": "${{ github.actor }}" }
+              ]
+            }]
+          }
+EOF
+          )
+
+          # Send notification to Teams
+          curl -H "Content-Type: application/json" -d "$PAYLOAD" "$WEBHOOK_URL"
