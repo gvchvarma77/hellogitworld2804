@@ -4,6 +4,7 @@
 # https://docs.microsoft.com/azure/devops/pipelines/languages/java
 #email notifications
 #testing
+3testing-successfull
 #web-hook testing
 trigger:
 - master
